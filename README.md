@@ -12,7 +12,7 @@ Lorsqu'un utilisateur envoie une demande, le backend lance en parallele:
 
 Les icones apparaissent a des moments controles de l'attente, par exemple a 5 %, 50 % et 70 % du temps moyen de reponse. Si le LLM repond avant la fin de l'animation, l'animation est interrompue et la reponse devient prioritaire.
 
-<img width="3840" height="2160" alt="image" src="https://github.com/user-attachments/assets/a4274f84-824b-43fd-bfa3-39b3a89a4bae" />
+<img width="3840" height="2160" alt="image" src="https://github.com/user-attachments/assets/2a987ad7-411e-4c24-b684-f4e800e42396" />
 
 
 ## Objectif
