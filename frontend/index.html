@@ -1,40 +1,106 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>WAIT Demo</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main class="app-shell">
-      <section class="conversation" aria-label="Conversation WAIT">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">WAIT</p>
-            <h1>Latence visible pour interfaces RAG</h1>
-          </div>
-          <span id="status" class="status">Deconnecte</span>
-        </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WAIT — Interface</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
 
-        <div id="messages" class="messages" aria-live="polite"></div>
+  <!-- Overlays -->
+  <div class="grain"></div>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
 
-        <div id="waitRail" class="wait-rail" aria-label="Progression d'attente"></div>
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="logo">
+        <span class="logo-bracket">[</span>WAIT<span class="logo-bracket">]</span>
+      </div>
+      <div class="header-meta">
+        <span class="meta-item">v0.1.0</span>
+        <span class="meta-sep">/</span>
+        <span class="meta-item" id="serverAddr">ws://localhost:1234</span>
+      </div>
+    </div>
+    <div class="status-bar">
+      <div class="status-indicator" id="statusIndicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-label" id="statusLabel">DÉCONNECTÉ</span>
+      </div>
+      <button class="btn-connect" id="btnConnect">CONNECTER</button>
+    </div>
+    <div class="header-accent-line"></div>
+  </header>
 
-        <form id="askForm" class="composer">
-          <input
-            id="requestInput"
-            name="request"
-            type="text"
-            autocomplete="off"
-            placeholder="Pose une question au systeme WAIT"
-            required
-          />
-          <button type="submit">Envoyer</button>
-        </form>
-      </section>
-    </main>
+  <!-- Main layout -->
+  <main>
 
-    <script src="app.js"></script>
-  </body>
+    <!-- Panel icônes K3 -->
+    <aside id="iconPanel">
+      <div class="panel-header">
+        <span class="panel-title">K3_ICONS</span>
+        <span class="panel-count" id="iconCount">0</span>
+      </div>
+      <div class="icon-grid" id="iconGrid">
+        <div class="icon-placeholder">
+          <span class="placeholder-dash">— — —</span>
+          <span class="placeholder-label">en attente</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Zone de chat -->
+    <section id="chatSection">
+
+      <!-- Barre d'infos du chat -->
+      <div class="chat-topbar">
+        <span class="topbar-label">// CONVERSATION</span>
+        <div class="topbar-actions">
+          <button class="topbar-btn" id="clearBtn" title="Effacer la conversation">CLR</button>
+        </div>
+      </div>
+
+      <div class="messages-container" id="messagesContainer">
+        <div class="boot-sequence">
+          <div class="boot-line" style="--d:0ms">WAIT TERMINAL v0.1.0</div>
+          <div class="boot-line" style="--d:120ms">Initialisation du protocole WebSocket…</div>
+          <div class="boot-line" style="--d:240ms">Cible : <code>ws://localhost:1234</code></div>
+          <div class="boot-line" style="--d:360ms">Backend : Qt/C++ (wait_Client_Session)</div>
+          <div class="boot-line" style="--d:500ms">─────────────────────────────────</div>
+          <div class="boot-line" style="--d:620ms">Prêt. Cliquez sur <strong>CONNECTER</strong> pour démarrer.</div>
+        </div>
+      </div>
+
+      <!-- Barre de saisie -->
+      <div class="input-bar">
+        <div class="input-wrapper">
+          <span class="prompt-char">&gt;_</span>
+          <textarea
+            id="userInput"
+            placeholder="Entrez votre requête…"
+            rows="1"
+            disabled
+          ></textarea>
+        </div>
+        <div class="input-actions">
+          <span class="shortcut-hint">↵ Envoyer · ⇧↵ Retour</span>
+          <button id="sendBtn" disabled>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 8L14 8M14 8L9 3M14 8L9 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>SEND</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
 </html>
