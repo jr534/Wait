@@ -17,10 +17,10 @@
 #include <QNetworkReply>
 #include <QFuture>
 #include <QTime>
+#include <QElapsedTimer>
+#include <QList>
 
-
-
-wait_Client_Session::wait_Client_Session(QWebSocket *pclient, QObject *parent)
+wait_Client_Session::wait_Client_Session(QWebSocket *pclient,QList<float>* p_timer_list, QObject *parent)
 
 {
     m_pclient=pclient;
@@ -32,6 +32,7 @@ wait_Client_Session::wait_Client_Session(QWebSocket *pclient, QObject *parent)
 
     m_manager = new QNetworkAccessManager(this);
 
+    m_p_timer_list=p_timer_list;
 }
 
 void wait_Client_Session::onMessageReceived(const QString &message)
@@ -69,6 +70,9 @@ void wait_Client_Session::onMessageReceived(const QString &message)
 }
 
 void wait_Client_Session::call_LLM_API(const QString &user_request){
+    QElapsedTimer crono;
+    bool TTFT = false;
+    crono.start();
     // a changer en fonction du fourniseru de RAG/CAG
     QUrl url("http://127.0.0.1:3001/api/v1/workspace/dev/stream-chat");
     QNetworkRequest request(url);
@@ -100,8 +104,12 @@ void wait_Client_Session::call_LLM_API(const QString &user_request){
     qDebug() << "Debug : le message "+user_request+" a etait envoyer a l'api.";
     connect(reply,
             &QNetworkReply::readyRead,
-            [reply, this]()
+            [reply, this, &TTFT, &crono]()
             {
+                if (TTFT == false ){
+                    float seconds = crono.elapsed() / 1000.0f;
+                    emit signal_add_timer_data(seconds);
+                }
                 QString data = QString::fromUtf8(reply->readAll());
                 qDebug() << data;
                 QStringList LLM_segment_liste = data.split("data:", Qt::SkipEmptyParts);
@@ -169,6 +177,8 @@ void wait_Client_Session::call_LLM_API(const QString &user_request){
 QString wait_Client_Session::calcule_k3_icon(const QString &user_request){
     return user_request;
 }
+
+
 void wait_Client_Session::sendMessage(const QString &message)
 {
     // On vérifie que le pointeur n'est pas nulptr == conextion fermer

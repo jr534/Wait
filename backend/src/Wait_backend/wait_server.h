@@ -22,6 +22,9 @@ private:
     wait_Client_Session *m_pnewclient;
     int porte;
     QList<wait_Client_Session*> User;
+    QList<float> timer_list;
+    void add_timer_in_list(float segond);
+    void load_data()
 
 private slots:
     void New_Connection();
