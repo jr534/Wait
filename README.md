@@ -1,6 +1,8 @@
 
 <img width="3840" height="2160" alt="WAIT project preview" src="https://github.com/user-attachments/assets/efb08f30-374f-4e1f-bd77-8ae300386340" />
 
+> Statut : projet en cours de developpement.
+
 WAIT est une demonstration UX pour rendre la latence d'un systeme CAG/RAG/LLM plus lisible et plus acceptable.
 
 Lorsqu'un utilisateur envoie une demande, le backend lance en parallele:
@@ -129,4 +131,4 @@ Le serveur WebSocket ecoute par defaut sur le port `8765`.
 
 ## Etat du projet
 
-Ce depot contient une base de travail: documentation, protocole, structure de dossiers, frontend de demonstration et squelette backend. Les prochaines etapes sont de connecter AnythingLLM, charger la bibliotheque d'icones et implementer le vrai calcul de similarite cosinus.
+Ce projet est en cours de developpement. Le depot contient une base de travail: documentation, protocole, structure de dossiers, frontend de demonstration et squelette backend. Les prochaines etapes sont de connecter AnythingLLM, charger la bibliotheque d'icones et implementer le vrai calcul de similarite cosinus.
