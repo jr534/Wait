@@ -79,7 +79,7 @@ Dès qu'une requête est soumise via WebSocket, WAIT déclenche en parallèle tr
 WAIT/
 │
 ├── Backend_Wait.py           # Point d'entrée FastAPI (WebSocket "/ws" + fichiers statiques)
-├── static/                   # Interface web servie à la racine ("/")
+├── frontend/                 # Interface web servie à la racine ("/")
 │   └── index.html            # UI interactive et animations de chargement
 ├── templates/                # Templates Jinja2 (backend)
 ├── icons_lucide.db           # Base SQLite-vec contenant les icônes indexées sémantiquement
