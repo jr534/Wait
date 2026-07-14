@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant</title>
+    <!-- Logo SVG configuré comme favicon -->
+    <link rel="icon" type="image/svg+xml" href="logo-wait.svg">
+    
+    <!-- Chargement des CDN nécessaires pour faire fonctionner le code -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Bibliothèques KaTeX pour le rendu des formules mathématiques -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <!-- Bibliothèque Highlight.js pour la détection et colorisation automatique des langages -->
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+
+    <style>
+        /* Animation des 3 carrés pulsants (angles droits) - Transition abrupte et saccadée */
+        @keyframes pulse-square {
+            0%, 100% {
+                transform: scale(0.85);
+                background-color: rgba(62, 184, 94, 0.3);
+            }
+            50% {
+                transform: scale(1.15);
+                background-color: rgba(62, 184, 94, 0.9);
+            }
+        }
+        .anim-square {
+            /* L'utilisation de step-end supprime l'interpolation fluide au profit d'un changement d'état net */
+            animation: pulse-square 1.2s infinite step-end;
+        }
+        .delay-200 {
+            animation-delay: 0.2s;
+        }
+        .delay-400 {
+            animation-delay: 0.4s;
+        }
+
+        /* Classe de verrouillage des cubes en état "gros" */
+        .locked-square {
+            transform: scale(1.1) !important;
+            background-color: #3EB85E !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Standardisation des SVG Lucide injectés dynamiquement */
+        .lucide-icon-wrapper svg {
+            width: 22px !important;
+            height: 22px !important;
+            stroke: #D2F1D7 !important;
+            fill: none !important;
+            stroke-width: 2.5 !important;
+            stroke-linecap: square !important;
+            stroke-linejoin: miter !important;
+        }
+
+        /* Curseur de streaming dynamique façon Streamdown */
+        .streaming-caret::after {
+            content: "▊";
+            display: inline-block;
+            margin-left: 4px;
+            color: #1E502E;
+            font-size: 1.1em;
+            vertical-align: middle;
+            animation: blink-caret 0.8s infinite step-end;
+        }
+        @keyframes blink-caret {
+            from, to { color: transparent }
+            50% { color: #1E502E; }
+        }
+
+        /* --- Style des titres Markdown et textes en gras --- */
+        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+            color: #154224 !important;
+            font-weight: 800 !important;
+            margin-top: 1.25rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        .prose strong {
+            color: #1E502E !important;
+            font-weight: 700 !important;
+        }
+
+        /* --- Style des blocs de code <pre> et <code> aux couleurs du thème --- */
+        .prose pre {
+            background-color: #11321C !important; /* Deep Forest Green */
+            color: #D2F1D7 !important;           /* Mint text */
+            border: 2px solid #3EB85E !important; /* Bordure verte émeraude */
+            border-radius: 0px !important;       /* Angles droits stricts */
+            padding: 1.25rem !important;
+            margin: 1.5rem 0 !important;
+            overflow-x: auto !important;         /* Défilement horizontal */
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace !important;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .prose code {
+            color: #11321C !important;           /* Code inline vert foncé */
+            background-color: rgba(62, 184, 94, 0.15) !important; /* Fond d'accentuation léger */
+            padding: 0.2rem 0.4rem !important;
+            border-radius: 0px !important;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace !important;
+            font-size: 0.9em !important;
+            font-weight: 600 !important;
+        }
+        /* Dans un bloc <pre>, le <code> hérite des couleurs claires du terminal */
+        .prose pre code {
+            color: #D2F1D7 !important;
+            background-color: transparent !important;
+            padding: 0 !important;
+            font-size: 0.85rem !important;
+            font-weight: normal !important;
+        }
+        /* Suppression des guillemets d'accentuation (backticks) ajoutés par Tailwind Typography */
+        .prose code::before, .prose code::after {
+            content: "" !important;
+        }
+        /* Scrollbar horizontale pour les blocs de code */
+        .prose pre::-webkit-scrollbar {
+            height: 6px;
+        }
+        .prose pre::-webkit-scrollbar-track {
+            background: #11321C;
+        }
+        .prose pre::-webkit-scrollbar-thumb {
+            background: #8CE09F;
+            border-radius: 0px; /* Angles droits */
+        }
+        .prose pre::-webkit-scrollbar-thumb:hover {
+            background: #3EB85E;
+        }
+
+        /* --- Colorisation Syntaxique HSL Harmonisée --- */
+        /* Uniquement la Teinte (H) varie. Saturation (S) = 55%, Luminosité (L) = 80% */
+        .hljs-comment,
+        .hljs-quote {
+            color: hsl(130, 55%, 80%) !important; /* Vert émeraude adouci par l'opacité */
+            opacity: 0.65;
+            font-style: italic;
+        }
+        .hljs-keyword,
+        .hljs-selector-tag {
+            color: hsl(200, 55%, 80%) !important; /* Bleu/Cyan pour les mots-clés */
+            font-weight: bold;
+        }
+        .hljs-string,
+        .hljs-section,
+        .hljs-addition {
+            color: hsl(90, 55%, 80%) !important;  /* Jaune-vert pour les chaînes de texte */
+        }
+        .hljs-number,
+        .hljs-literal,
+        .hljs-symbol,
+        .hljs-bullet {
+            color: hsl(30, 55%, 80%) !important;  /* Orange/Pêche pour les nombres */
+        }
+        .hljs-title,
+        .hljs-name,
+        .hljs-selector-id,
+        .hljs-selector-class {
+            color: hsl(280, 55%, 80%) !important; /* Lavande/Violet pour les fonctions et éléments */
+            font-weight: 600;
+        }
+        .hljs-attribute,
+        .hljs-attr,
+        .hljs-variable,
+        .hljs-template-variable {
+            color: hsl(340, 55%, 80%) !important; /* Rose/Magenta pour les attributs et variables */
+        }
+        .hljs-built_in,
+        .hljs-type {
+            color: hsl(170, 55%, 80%) !important; /* Turquoise pour les built-ins */
+        }
+        .hljs-meta,
+        .hljs-meta .hljs-keyword {
+            color: hsl(50, 55%, 80%) !important;  /* Jaune chaud */
+        }
+
+        /* --- Améliorations de l'affichage des tableaux --- */
+        .prose table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.9em;
+            text-align: left;
+        }
+        .prose th {
+            background-color: rgba(62, 184, 94, 0.15) !important;
+            color: #154224 !important;
+            font-weight: 700 !important;
+            padding: 10px 14px !important;
+            border: 1px solid rgba(62, 184, 94, 0.3) !important;
+        }
+        .prose td {
+            padding: 10px 14px !important;
+            border: 1px solid rgba(62, 184, 94, 0.2) !important;
+            color: #1E502E !important;
+        }
+        .prose tr:nth-child(even) {
+            background-color: rgba(140, 224, 159, 0.1);
+        }
+        .prose tr:hover {
+            background-color: rgba(62, 184, 94, 0.05);
+        }
+
+        /* --- Style et transitions de rétractation des outils --- */
+        .tool-container {
+            transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease, background-color 0.3s ease;
+            max-width: 48rem; /* Equivalent à max-w-3xl */
+        }
+        .collapsed-tool {
+            max-width: 44px !important; /* Réduction exacte à la taille du carré d'icône */
+            border-color: transparent !important;
+            background-color: transparent !important;
+            box-shadow: none !important;
+        }
+        .tool-text {
+            transition: opacity 0.2s ease, max-width 0.3s ease, padding 0.3s ease;
+            opacity: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .collapsed-tool .tool-text {
+            opacity: 0 !important;
+            max-width: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            pointer-events: none;
+        }
+
+        /* --- Scrollbar personnalisée aux couleurs du thème --- */
+        #chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-container::-webkit-scrollbar-track {
+            background: #D2F1D7;
+        }
+        #chat-container::-webkit-scrollbar-thumb {
+            background: #8CE09F;
+            border-radius: 0px; /* Angles droits */
+        }
+        #chat-container::-webkit-scrollbar-thumb:hover {
+            background: #3EB85E;
+        }
+
+        /* --- Animations de balayage brillant (shimmer) pour les squelettes --- */
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+        .shimmer {
+            background: linear-gradient(
+                90deg,
+                rgba(140, 224, 159, 0.15) 25%,
+                rgba(62, 184, 94, 0.35) 50%,
+                rgba(140, 224, 159, 0.15) 75%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite linear;
+        }
+
+        /* Shimmers colorées harmonisées pour le squelette de code */
+        .shimmer-keyword {
+            background: linear-gradient(90deg, hsla(200, 55%, 80%, 0.15) 25%, hsla(200, 55%, 80%, 0.35) 50%, hsla(200, 55%, 80%, 0.15) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite linear;
+        }
+        .shimmer-string {
+            background: linear-gradient(90deg, hsla(90, 55%, 80%, 0.15) 25%, hsla(90, 55%, 80%, 0.35) 50%, hsla(90, 55%, 80%, 0.15) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite linear;
+        }
+        .shimmer-title {
+            background: linear-gradient(90deg, hsla(280, 55%, 80%, 0.15) 25%, hsla(280, 55%, 80%, 0.35) 50%, hsla(280, 55%, 80%, 0.15) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite linear;
+        }
+        .shimmer-attr {
+            background: linear-gradient(90deg, hsla(340, 55%, 80%, 0.15) 25%, hsla(340, 55%, 80%, 0.35) 50%, hsla(340, 55%, 80%, 0.15) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite linear;
+        }
+        .shimmer-number {
+            background: linear-gradient(90deg, hsla(30, 55%, 80%, 0.15) 25%, hsla(30, 55%, 80%, 0.35) 50%, hsla(30, 55%, 80%, 0.15) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite linear;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen bg-[#D2F1D7]">
+
+<!-- Header / Statut Connexion (Angles Droits) -->
+<header class="px-6 py-4 flex items-center justify-between border-b border-[#8CE09F]/30 bg-[#D2F1D7] rounded-none">
+    <div class="flex items-center space-x-3">
+        <!-- Intégration de votre logo SVG local -->
+        <img src="logo-wait.svg" alt="Logo" class="w-10 h-10 object-contain rounded-none" />
+        <div>
+            <h1 class="text-md font-bold text-[#154224] tracking-wide uppercase">Assistant</h1>
+        </div>
+    </div>
+    <div class="flex items-center space-x-2 bg-[#8CE09F]/30 rounded-none px-3 py-1 border border-[#8CE09F]/40">
+        <span id="status-dot" class="w-2.5 h-2.5 bg-yellow-500 animate-pulse rounded-none"></span>
+        <span id="status-text" class="text-xs font-semibold text-[#1E502E]">Connexion...</span>
+    </div>
+</header>
+
+<!-- Zone de Chat principal (avec scrollbar personnalisée) -->
+<main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 bg-[#D2F1D7] rounded-none" id="chat-container">
+   
+</main>
+
+<!-- Zone de Saisie (Angles Droits) -->
+<footer class="p-4 bg-[#D2F1D7] border-t border-[#8CE09F]/20 rounded-none">
+    <div class="max-w-5xl mx-auto">
+        <form id="chat-form" class="flex items-center bg-[#8CE09F] rounded-none px-4 py-2 shadow-inner border-2 border-[#3EB85E]/20 space-x-3">
+            <input 
+                type="text" 
+                id="user-input" 
+                placeholder="ENTRÉE VOTRE MESSAGE ICI ..." 
+                class="flex-1 bg-transparent border-none text-[#11321C] placeholder-[#1E502E]/60 text-sm font-semibold focus:outline-none focus:ring-0 rounded-none"
+                autocomplete="off"
+                required
+            />
+            <!-- Bouton d'envoi utilisant votre icône SVG locale -->
+            <button 
+                type="submit" 
+                id="send-btn"
+                class="bg-[#3FBD52] hover:bg-[#3FBD52] text-[#D2F1D7] p-2 rounded-none transition duration-200 shadow active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center w-10 h-10"
+                disabled
+            >
+                <img src="send-arow.svg" alt="Envoyer" class="w-5 h-5 object-contain" />
+            </button>
+        </form>
+    </div>
+</footer>
+
+<!-- JavaScript applicatif -->
+<script>
+    const chatContainer = document.getElementById("chat-container");
+    const chatForm = document.getElementById("chat-form");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+    const statusDot = document.getElementById("status-dot");
+    const statusText = document.getElementById("status-text");
+
+    let socket = null;
+    let currentAgentMessageEl = null;
+    let activeWaitContainerId = null;
+    let activeSkeletonEl = null;
+    let caretTimeoutId = null;
+    let lastChunkTime = 0; // Enregistre l'horodatage de réception du dernier chunk
+    let isLLMResponding = false; // Indique si le LLM a démarré sa phase de réponse
+    let skeletonTimerId = null; // Timer d'attente pour l'apparition différée du squelette
+    let waitStartTime = 0; // Heure de début de l'animation d'attente
+    let icon1DurationMs = 2000; // Durée par défaut de t_icon1 (2s)
+    let pendingWaitTimeouts = []; // Minuteurs en attente pour le verrouillage des icônes (annulés dès que le LLM répond)
+
+    marked.setOptions({
+        breaks: true,
+        gfm: true
+    });
+
+    function connectWebSocket() {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const wsUrl = `${protocol}//${window.location.host}/ws`;
+        
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = () => {
+            statusDot.className = "w-2.5 h-2.5 bg-emerald-500 shadow-sm rounded-none";
+            statusText.textContent = "Connecté";
+            statusText.className = "text-xs font-semibold text-emerald-700";
+            sendBtn.disabled = false;
+        };
+
+        socket.onclose = () => {
+            statusDot.className = "w-2.5 h-2.5 bg-rose-500 animate-pulse rounded-none";
+            statusText.textContent = "Déconnecté";
+            statusText.className = "text-xs font-semibold text-rose-700";
+            sendBtn.disabled = true;
+            setTimeout(connectWebSocket, 3000);
+        };
+
+        socket.onerror = (err) => {
+            console.error("Erreur WebSocket:", err);
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            handleServerMessage(data);
+        };
+    }
+
+    // Annule tous les minuteurs d'attente encore en suspens (icônes de progression, squelette différé)
+    // Appelé dès que le LLM commence réellement à répondre, pour que rien ne puisse plus s'afficher après coup.
+    function cancelAllPendingWaitTimers() {
+        pendingWaitTimeouts.forEach(id => clearTimeout(id));
+        pendingWaitTimeouts = [];
+        if (skeletonTimerId) {
+            clearTimeout(skeletonTimerId);
+            skeletonTimerId = null;
+        }
+    }
+
+    function handleServerMessage(data) {
+        switch(data.type) {
+            case "user/ask/ack":
+                isLLMResponding = false; // Réinitialise l'état pour autoriser les chargements
+                break;
+
+            case "wait":
+                if (isLLMResponding) break; // Ignore les attentes si la réponse a démarré
+                handleWaitMessage(data.payload);
+                break;
+
+            case "wait/squel":
+                if (isLLMResponding) break; // Bloque l'affichage de squelettes tardifs
+                
+                // Extraction robuste des valeurs t_squel et squel_code
+                const tSquel = data.t_squel !== undefined ? data.t_squel : (data.payload ? data.payload.t_squel : 1.5);
+                const squelCode = data.squel_code !== undefined ? data.squel_code : (data.payload ? data.payload.squel_code : null);
+                
+                if (squelCode !== null) {
+                    // Supprime tout ancien minuteur en suspens
+                    if (skeletonTimerId) {
+                        clearTimeout(skeletonTimerId);
+                    }
+                    
+                    // Planifie l'apparition du squelette uniquement après t_squel secondes
+                    skeletonTimerId = setTimeout(() => {
+                        // On n'affiche le squelette que si le LLM n'a pas encore répondu
+                        if (!isLLMResponding) {
+                            appendSkeleton(squelCode);
+                        }
+                    }, parseFloat(tSquel) * 1000);
+                }
+                break;
+
+            case "LLM/rep/chunk":
+                // PRIORITÉ ABSOLUE : la réponse du LLM prend immédiatement le dessus sur
+                // toute animation d'attente ou squelette en cours, sans aucun délai d'attente.
+                isLLMResponding = true; // Phase de réponse active
+                cancelAllPendingWaitTimers(); // Coupe court à tout ce qui était encore programmé
+                clearWaitAnimation();
+                clearActiveSkeleton(); // Retire l'écran squelette à l'arrivée du texte réel du LLM
+                finalizeActiveToolCall(); // Finalise l'outil (se réduit) dès que le texte arrive
+                appendChunkToAgentMessage(data.payload.chunk);
+                break;
+
+            case "LLM/rep/tool_call":
+                // PRIORITÉ ABSOLUE : un appel d'outil est traité immédiatement, sans attendre
+                // la fin de l'animation d'attente.
+                isLLMResponding = true; // L'exécution de tool fait partie de la réponse active
+                cancelAllPendingWaitTimers();
+                clearWaitAnimation();
+                // Ignorer l'outil ici : le squelette reste actif jusqu'à l'arrivée du premier chunk de texte réel
+                const payload = data.payload;
+                if (payload.status === "start") {
+                    appendToolCallUI(payload.name, payload.info_sentence || "");
+                } else if (payload.status === "end") {
+                    finalizeActiveToolCall(); // Se rétracte en carré vert dès la fin de l'outil
+                }
+                break;
+
+            case "user/ask/error":
+                isLLMResponding = false;
+                cancelAllPendingWaitTimers();
+                clearWaitAnimation();
+                clearActiveSkeleton();
+                finalizeActiveToolCall();
+                appendErrorMessage(data.message || "Une erreur s'est produite.");
+                break;
+        }
+    }
+
+    // Ajoute le message de l'utilisateur (Angles Droits)
+    function appendUserMessage(text) {
+        currentAgentMessageEl = null;
+
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "flex justify-end max-w-3xl ml-auto";
+        messageDiv.innerHTML = `
+            <div class="bg-[#3EB85E] text-[#11321C] rounded-none px-4 py-3 shadow-md border-2 border-[#154224]/20 font-medium text-sm">
+                ${escapeHTML(text)}
+            </div>
+        `;
+        chatContainer.appendChild(messageDiv);
+        scrollToBottom(true); // Scroll forcé lors d'un message utilisateur
+    }
+
+    // Animation d'attente (3 cubes à angles droits)
+    function appendWaitAnimation() {
+        clearWaitAnimation();
+        waitStartTime = Date.now(); // Début du comptage pour t_icon1
+        icon1DurationMs = 2000; // Reset de la durée par défaut de t_icon1
+        
+        const waitId = "wait-" + Date.now();
+        activeWaitContainerId = waitId;
+
+        const waitDiv = document.createElement("div");
+        waitDiv.id = waitId;
+        waitDiv.className = "flex flex-col space-y-3 my-4 max-w-md transition-all duration-300 rounded-none";
+        
+        waitDiv.innerHTML = `
+            <div class="flex items-center space-x-3 h-12 rounded-none">
+                <div id="${waitId}-sq1" class="w-8 h-8 rounded-none bg-[#3EB85E]/40 anim-square flex items-center justify-center"></div>
+                <div id="${waitId}-sq2" class="w-8 h-8 rounded-none bg-[#3EB85E]/40 anim-square delay-200 flex items-center justify-center"></div>
+                <div id="${waitId}-sq3" class="w-8 h-8 rounded-none bg-[#3EB85E]/40 anim-square delay-400 flex items-center justify-center"></div>
+            </div>
+            <div id="${waitId}-text" class="text-xs font-bold text-[#1E502E] tracking-wide">recherche</div>
+        `;
+        
+        chatContainer.appendChild(waitDiv);
+        scrollToBottom(false);
+    }
+
+    // Gère la réception d'une icône individuelle envoyée par le nouveau back-end
+    function handleWaitMessage(payload) {
+        // Initialisation de la structure d'attente globale si elle n'existe pas encore
+        if (!activeWaitContainerId) {
+            appendWaitAnimation();
+        }
+
+        const waitId = activeWaitContainerId;
+        let index = null;
+        let delaySec = null;
+        let phrase = "";
+        let svg = "";
+
+        // Détection de l'index de l'icône reçue
+        if (payload.t_icon1 !== undefined) {
+            index = 1;
+            delaySec = payload.t_icon1;
+            icon1DurationMs = parseFloat(delaySec) * 1000; // Enregistre la durée dynamique réelle de t_icon1
+            phrase = payload.phrase_icon1 || "";
+            svg = payload.svg_icon1 || payload.svg_icon || "";
+        } else if (payload.t_icon2 !== undefined) {
+            index = 2;
+            delaySec = payload.t_icon2;
+            phrase = payload.phrase_icon2 || "";
+            svg = payload.svg_icon2 || payload.svg_icon || "";
+        } else if (payload.t_icon3 !== undefined) {
+            index = 3;
+            delaySec = payload.t_icon3;
+            phrase = payload.phrase_icon3 || "";
+            svg = payload.svg_icon3 || payload.svg_icon || "";
+        }
+
+        // Application différée selon le paramètre fourni
+        if (index !== null) {
+            const delayMs = parseFloat(delaySec) * 1000;
+            const timeoutId = setTimeout(() => {
+                // Le LLM a priorité absolue : si la réponse a démarré entre-temps,
+                // on n'applique plus aucun changement visuel lié à l'attente.
+                if (isLLMResponding) return;
+
+                const sqEl = document.getElementById(`${waitId}-sq${index}`);
+                const txtEl = document.getElementById(`${waitId}-text`);
+                
+                if (sqEl) {
+                    sqEl.classList.remove("anim-square", "delay-200", "delay-400");
+                    sqEl.classList.add("locked-square", "lucide-icon-wrapper", "rounded-none");
+                    sqEl.innerHTML = svg;
+                }
+                
+                if (txtEl && phrase) {
+                    txtEl.innerHTML = escapeHTML(phrase);
+                }
+            }, delayMs);
+            pendingWaitTimeouts.push(timeoutId);
+        }
+    }
+
+    // Construit et affiche l'un des squelettes animés en cohérence avec le rendu du LLM (avec labels textuels)
+    // Le squelette restera de façon persistante à l'écran jusqu'à l'arrivée de la réponse du LLM.
+    function appendSkeleton(code) {
+        clearActiveSkeleton(); // Efface un éventuel squelette précédent
+
+        const skeletonId = "skeleton-" + Date.now();
+        const container = document.createElement("div");
+        container.id = skeletonId;
+        container.className = "w-full rounded-none my-4";
+
+        const type = String(code).toLowerCase().trim();
+        let skeletonHTML = "";
+
+        switch (type) {
+            case "code":
+                skeletonHTML = `
+                    <div class="bg-[#11321C] border-2 border-[#3EB85E] p-4 rounded-none space-y-3 w-full my-2 shadow-inner">
+                        <div class="h-3 rounded-none w-1/6 mb-4 shimmer"></div>
+                        <div class="flex space-x-2">
+                            <div class="h-3.5 rounded-none w-1/5 shimmer-keyword"></div>
+                            <div class="h-3.5 rounded-none w-2/5 shimmer-title"></div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <div class="h-3.5 rounded-none w-1/4 shimmer-attr"></div>
+                            <div class="h-3.5 rounded-none w-1/2 shimmer-string"></div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <div class="h-3.5 rounded-none w-1/6 shimmer-keyword"></div>
+                            <div class="h-3.5 rounded-none w-1/3 shimmer-number"></div>
+                        </div>
+                    </div>
+                `;
+                break;
+            case "liste":
+                skeletonHTML = `
+                    <div class="space-y-3 py-2">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-2.5 h-2.5 bg-[#3EB85E]/50 rounded-none animate-pulse flex-shrink-0"></div>
+                            <div class="h-4 rounded-none w-11/12 shimmer"></div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-2.5 h-2.5 bg-[#3EB85E]/50 rounded-none animate-pulse flex-shrink-0"></div>
+                            <div class="h-4 rounded-none w-9/12 shimmer"></div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-2.5 h-2.5 bg-[#3EB85E]/50 rounded-none animate-pulse flex-shrink-0"></div>
+                            <div class="h-4 rounded-none w-10/12 shimmer"></div>
+                        </div>
+                    </div>
+                `;
+                break;
+            case "paragraphe":
+                skeletonHTML = `
+                    <div class="space-y-2.5 py-2">
+                        <div class="h-4 rounded-none w-full shimmer"></div>
+                        <div class="h-4 rounded-none w-11/12 shimmer"></div>
+                        <div class="h-4 rounded-none w-10/12 shimmer"></div>
+                        <div class="h-4 rounded-none w-8/12 shimmer"></div>
+                    </div>
+                `;
+                break;
+            case "tableau":
+                skeletonHTML = `
+                    <div class="border border-[#3EB85E]/20 rounded-none overflow-hidden my-3 w-full">
+                        <div class="flex bg-[#8CE09F]/20 border-b border-[#3EB85E]/20 p-2.5 space-x-4">
+                            <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                            <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                            <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                            <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                        </div>
+                        <div class="p-2.5 space-y-3">
+                            <div class="flex space-x-4">
+                                <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                                <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                                <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                                <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                            </div>
+                            <div class="flex space-x-4">
+                                <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                                <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                                <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                                <div class="h-4 rounded-none w-1/4 shimmer"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+            case "titre":
+                skeletonHTML = `
+                    <div class="space-y-1 py-2">
+                        <div class="h-6 rounded-none w-1/3 shimmer"></div>
+                    </div>
+                `;
+                break;
+        }
+
+        container.innerHTML = skeletonHTML;
+        chatContainer.appendChild(container);
+        scrollToBottom(false);
+
+        activeSkeletonEl = container;
+    }
+
+    // Nettoie le squelette en cours (et annule l'apparition différée programmée)
+    function clearActiveSkeleton() {
+        if (skeletonTimerId) {
+            clearTimeout(skeletonTimerId);
+            skeletonTimerId = null;
+        }
+        if (activeSkeletonEl) {
+            activeSkeletonEl.remove();
+            activeSkeletonEl = null;
+        }
+    }
+
+    // Supprime le curseur d'écriture actif de l'écran
+    function removeActiveCaret() {
+        if (caretTimeoutId) {
+            clearTimeout(caretTimeoutId);
+            caretTimeoutId = null;
+        }
+        const prevCaret = document.querySelector(".streaming-caret");
+        if (prevCaret) {
+            prevCaret.classList.remove("streaming-caret");
+        }
+    }
+
+    function clearWaitAnimation() {
+        if (activeWaitContainerId) {
+            const activeEl = document.getElementById(activeWaitContainerId);
+            if (activeEl) activeEl.remove();
+            activeWaitContainerId = null;
+        }
+    }
+
+    // Finalise l'affichage de l'outil actif (se rétracte en carré vert mais devient cliquable)
+    function finalizeActiveToolCall() {
+        const el = document.getElementById("active-tool-call");
+        if (el) {
+            el.removeAttribute("id");
+            el.classList.add("collapsed-tool");
+        }
+    }
+
+    // Auto-correction de la structure markdown pour corriger les blocs incomplets durant le stream
+    function healMarkdown(markdown) {
+        let healed = markdown;
+        const backticks = (healed.match(/```/g) || []).length;
+        if (backticks % 2 !== 0) {
+            healed += "\n```"; // Clôture automatique du bloc de code ouvert
+        }
+        return healed;
+    }
+
+    // Outils (UI Angles Droits avec troncature pour éviter le retour à la ligne)
+    function appendToolCallUI(toolName, infoSentence) {
+        removeActiveCaret(); // Désactive le curseur précédent lors de l'appel d'un outil
+        finalizeActiveToolCall(); // Finalise l'outil précédent s'il y en avait un
+        
+        // REMARQUE : L'appel à clearActiveSkeleton() a été retiré d'ici pour s'assurer 
+        // que le squelette reste visible durant l'exécution des appels d'outils.
+        
+        currentAgentMessageEl = null; // Reset de l'élément de texte courant pour forcer la création d'un nouveau bloc après cet outil
+
+        const container = document.createElement("div");
+        container.id = "active-tool-call";
+        // Utilisation de .tool-container pour supporter l'animation de collapse/expand
+        container.className = "tool-container flex items-center bg-[#8CE09F]/70 rounded-none overflow-hidden border border-[#3EB85E]/30 w-full my-3 shadow-sm cursor-pointer";
+        
+        // Sélection de l'icône SVG selon l'outil appelé
+        let iconSvg = "";
+        switch (toolName) {
+            case "search":
+                iconSvg = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="square" stroke-linejoin="miter" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                `;
+                break;
+            case "get_page_content":
+                iconSvg = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="square" stroke-linejoin="miter" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                        <path stroke-linecap="square" stroke-linejoin="miter" d="M14 2v6h6m-8 5h4m-4 4h4"></path>
+                    </svg>
+                `;
+                break;
+            case "get_city_weather":
+                iconSvg = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="4" stroke-linecap="square" stroke-linejoin="miter"></circle>
+                        <path stroke-linecap="square" stroke-linejoin="miter" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+                    </svg>
+                `;
+                break;
+            default:
+                // Icône par défaut (clé à molette / outil)
+                iconSvg = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="square" stroke-linejoin="miter" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"></path>
+                    </svg>
+                `;
+                break;
+        }
+
+        // Harmonisation de l'affichage du texte pour les différents outils
+        let formattedMessage = infoSentence;
+        if (toolName === "search") {
+            formattedMessage = `j'appelle l'outil <strong class="text-[#154224]">recherche</strong> pour trouver des infos sur ${infoSentence.split("trouver des info sur").pop() || infoSentence}`;
+        } else if (toolName === "get_page_content") {
+            formattedMessage = `j'appelle l'outil <strong class="text-[#154224]">lecture de page</strong> pour récupérer le contenu de ${infoSentence.split("conetnue de la page").pop() || infoSentence}`;
+        } else if (toolName === "get_city_weather") {
+            formattedMessage = `j'appelle l'outil <strong class="text-[#154224]">météo</strong> pour récupérer la météo de ${infoSentence.split("métao de la ville").pop() || infoSentence}`;
+        }
+
+        container.innerHTML = `
+            <div class="bg-[#3EB85E] w-[44px] h-[44px] flex items-center justify-center text-[#D2F1D7] flex-shrink-0 rounded-none">
+                ${iconSvg}
+            </div>
+            <div class="tool-text px-4 py-2.5 text-xs md:text-sm text-[#11321C] font-semibold truncate min-w-0 flex-1">
+                ${formattedMessage}
+            </div>
+        `;
+
+        // Gestion de l'interactivité clic pour expand/collapse uniquement une fois finalisé (ID retiré)
+        container.addEventListener("click", () => {
+            if (!container.id) {
+                container.classList.toggle("collapsed-tool");
+            }
+        });
+
+        // Insertion ordonnée : si l'écran squelette est déjà affiché, l'outil est inséré juste avant lui 
+        // afin de garantir que l'outil reste au-dessus et le squelette à l'extrême bas.
+        if (activeSkeletonEl && activeSkeletonEl.parentNode === chatContainer) {
+            chatContainer.insertBefore(container, activeSkeletonEl);
+        } else {
+            chatContainer.appendChild(container);
+        }
+        
+        scrollToBottom(true);
+    }
+
+    // Réponses de l'agent (Pleine largeur avec streaming caret et correction à la volée des balises brisées)
+    function appendChunkToAgentMessage(chunk) {
+        lastChunkTime = Date.now(); // Met à jour l'instant de réception du dernier fragment
+
+        if (caretTimeoutId) {
+            clearTimeout(caretTimeoutId);
+            caretTimeoutId = null;
+        }
+
+        if (!currentAgentMessageEl) {
+            removeActiveCaret(); // Éteint le curseur sur tout ancien message
+
+            const messageDiv = document.createElement("div");
+            messageDiv.className = "w-full rounded-none";
+
+            const contentDiv = document.createElement("div");
+            // streaming-caret applique l'animation de curseur
+            contentDiv.className = "prose prose-emerald prose-sm max-w-none text-[#154224] py-1 streaming-caret";
+            
+            contentDiv.rawMarkdown = "";
+
+            messageDiv.appendChild(contentDiv);
+            chatContainer.appendChild(messageDiv);
+
+            currentAgentMessageEl = contentDiv;
+        } else {
+            // S'assurer de rajouter la classe de curseur lors de la reprise de la génération
+            currentAgentMessageEl.classList.add("streaming-caret");
+        }
+
+        currentAgentMessageEl.rawMarkdown += chunk;
+        
+        // Rendu résilient (Self-Healing) pour éviter les sauts de style sur du markdown cassé
+        const healedMarkdown = healMarkdown(currentAgentMessageEl.rawMarkdown);
+        currentAgentMessageEl.innerHTML = marked.parse(healedMarkdown);
+
+        // Colorisation syntaxique automatique sur les blocs <pre><code> détectés
+        currentAgentMessageEl.querySelectorAll('pre code').forEach((block) => {
+            if (typeof hljs !== 'undefined') {
+                hljs.highlightElement(block);
+            }
+        });
+
+        // Intégration de KaTeX pour analyser et afficher les expressions mathématiques (ex: $ (x_1, x_2) $)
+        if (typeof renderMathInElement === 'function') {
+            try {
+                renderMathInElement(currentAgentMessageEl, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '\\[', right: '\\]', display: true}
+                    ],
+                    throwOnError: false
+                });
+            } catch (e) {
+                // Ignore silent rendering issues during stream
+            }
+        }
+
+        // Planifie la désactivation automatique du curseur après 2 secondes d'inactivité
+        caretTimeoutId = setTimeout(() => {
+            removeActiveCaret();
+        }, 2000);
+
+        scrollToBottom(false); // Scroll intelligent non-bloquant
+    }
+
+    // Boîte d'erreur utilisant votre icône crosse-dinie-message.svg (Angles Droits)
+    function appendErrorMessage(message) {
+        removeActiveCaret();
+        finalizeActiveToolCall();
+        clearActiveSkeleton();
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "bg-rose-900/10 border-2 border-rose-950/30 text-rose-900 px-4 py-3 rounded-none text-xs max-w-xl mx-auto flex items-center space-x-3 font-bold";
+        
+        errorDiv.innerHTML = `
+            <img src="crosse-dinie-message.svg" alt="Error" class="w-5 h-5 object-contain flex-shrink-0 rounded-none" />
+            <span>Erreur : ${escapeHTML(message)}</span>
+        `;
+        
+        chatContainer.appendChild(errorDiv);
+        scrollToBottom(true);
+    }
+
+    chatForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        // Bloque l'envoi si le modèle est en train d'émettre ou a émis il y a moins de 1.5 seconde
+        const now = Date.now();
+        if (now - lastChunkTime < 1500) {
+            return; // Interdit la soumission silencieusement
+        }
+
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            removeActiveCaret(); // Désactive le curseur avant l'envoi d'une nouvelle requête
+            finalizeActiveToolCall(); // Supprime l'état actif du précédent outil
+            clearActiveSkeleton(); // Nettoie un squelette actif s'il y en avait un
+            isLLMResponding = false; // Réinitialise l'état pour autoriser les chargements
+            appendUserMessage(text);
+            appendWaitAnimation();
+            
+            socket.send(JSON.stringify({
+                type: "user/ask",
+                payload: {
+                    request: text
+                }
+            }));
+
+            userInput.value = "";
+        } else {
+            appendErrorMessage("Impossible d'envoyer le message, vous n'êtes pas connecté au serveur.");
+        }
+    });
+
+    // Défilement intelligent : ne force le scroll en bas que si l'utilisateur y est déjà
+    function scrollToBottom(force = false) {
+        const threshold = 150; 
+        const isNearBottom = (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) <= threshold;
+        
+        if (force || isNearBottom) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    }
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag)
+        );
+    }
+
+    connectWebSocket();
+</script>
+</body>
+</html>

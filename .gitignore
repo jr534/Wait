@@ -1,60 +1,47 @@
-# C++ objects and libs
-*.slo
-*.lo
-*.o
-*.a
-*.la
-*.lai
-*.so
-*.so.*
-*.dll
-*.dylib
+# Python virtual environments
+venv/
+.venv/
+env/
 
-# Qt
-object_script.*.Release
-object_script.*.Debug
-*_plugin_import.cpp
-/.qmake.cache
-/.qmake.stash
-*.pro.user
-*.pro.user.*
-*.qbs.user
-*.qbs.user.*
-*.moc
-moc_*.cpp
-moc_*.h
-qrc_*.cpp
-ui_*.h
-*.qmlc
-*.jsc
-Makefile*
-*build-*
-build/
-*.qm
-*.prl
-*.qmlls.ini
-target_wrapper.*
-*.autosave
-*.qmlproject.user
-*.qmlproject.user.*
-CMakeLists.txt.user*
-compile_commands.json
-*creator.user*
-*_qmlcache.qrc
+# Python caches and compiles
+__pycache__/
+*.py[cod]
+*$py.class
 
-# Frontend
-node_modules/
-dist/
-.parcel-cache/
-.vite/
+# PyTorch checkpoints and large models
+**/mt5_fakcogni_model/
+**/best_multilingual_model/
+**/best_multilingual_model.zip
+*.pt
+*.bin
+*.safetensors
+# Do NOT ignore our SLP layout classification weights
+!backend/slp_bgem3_best.pt
 
-# Local environment
-.env
-.env.*
-!.env.example
+# SQLite databases
+*.db
+# Do NOT ignore the Lucide vector search SQLite database
+!backend/icons_lucide.db
 
-# OS and editor
+# Large datasets and training output files
+*.jsonl
+*.json
+# Do NOT ignore the scripts/lucide_icons metadata file or the label mapping
+!scripts/lucide_icons.jsonl
+!backend/label_map.json
+
+# IDE and Editor configs
+.vscode/
+.idea/
 .DS_Store
 Thumbs.db
-.idea/
-.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Local environment variables
+.env
+.env.local
+.env.*.local

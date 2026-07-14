@@ -1,0 +1,16 @@
+fastapi>=0.100.0
+uvicorn>=0.20.0
+sqlite_vec>=0.2.0
+sentence_transformers>=2.2.0
+transformers>=4.30.0
+torch>=2.0.0
+numpy>=1.24.0
+langchain>=0.1.0
+langchain-core>=0.1.0
+langchain-community>=0.0.10
+playwright>=1.35.0
+requests>=2.31.0
+ddgs>=9.14.0
+jinja2>=3.1.0
+python-dotenv>=1.0.0
+tqdm>=4.65.0
