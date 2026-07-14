@@ -108,9 +108,3 @@ Ouvrez simplement votre navigateur à l'adresse suivante : **[http://localhost:8
 L'interface web y est servie automatiquement.
 
 ---
-
-## 💡 Remarque sur le modèle mT5 (Génération de phrases)
-Le dossier contenant le modèle mT5 fine-tuné (`mt5_fakcogni_model`, d'une taille de 1,2 Go) est exclu du dépôt Git pour optimiser le clonage. 
-
-* **Système de Fallback intégré** : Si le modèle n'est pas présent localement lors du démarrage, le backend bascule automatiquement sur un **générateur de phrases de secours intelligent** basé sur l'icône et la langue détectée. Vous pouvez tester l'ensemble du pipeline (icônes sémantiques, prédiction du squelette et streaming de l'agent) immédiatement après l'installation !
-* **Entraîner votre propre modèle** : Vous pouvez générer un dataset et lancer le fine-tuning à tout moment en utilisant les scripts fournis dans le dossier `scripts/`.
