@@ -49,7 +49,7 @@ DB_PATH = os.path.join(BASE_DIR, "icons_lucide.db")
 SLP_PATH = os.path.join(BASE_DIR, "slp_bgem3_best.pt")
 LABEL_MAP_PATH = os.path.join(BASE_DIR, "label_map.json")
 MT5_MODEL_PATH = os.path.join(BASE_DIR, "mt5_fakcogni_model")
-STATIC_DIR = os.path.join(os.path.dirname(BASE_DIR), "static")
+STATIC_DIR = os.path.join(os.path.dirname(BASE_DIR), "frontend")
 
 # ======================= SLP Classifier Setup (Module 3) ========================
 

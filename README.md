@@ -1,7 +1,7 @@
 # WAIT (Wait Acceptance in Interactive Tasks)
 
 <p align="center">
-  <img src="static/logo-wait.svg" width="120" alt="WAIT Logo" />
+  <img src="frontend/logo-wait.svg" width="120" alt="WAIT Logo" />
 </p>
 
 > **"L'impression de rapidité compte plus que la rapidité réelle."**
@@ -63,7 +63,7 @@ WAIT/
 │   ├── slp_bgem3_best.pt     # Poids du classifieur de squelette SLP
 │   └── label_map.json        # Mappage des index de classes en formats structurels
 │
-├── static/                   # Interface Utilisateur Web (HTML5/CSS/JS)
+├── frontend/                 # Interface Utilisateur Web (HTML5/CSS/JS)
 │   ├── index.html            # UI interactive et animations de chargement
 │   ├── logo-wait.svg         # Logo de l'application
 │   ├── send-arow.svg         # Icône du bouton d'envoi
