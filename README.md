@@ -1,8 +1,7 @@
 # WAIT (Wait Acceptance in Interactive Tasks)
 
-<p align="center">
-  <img src="frontend/logo-wait.svg" width="120" alt="WAIT Logo" />
-</p>
+<img width="3840" height="2160" alt="image" src="https://github.com/user-attachments/assets/2bbe3cf2-dd76-4a1c-8a61-2a63c145fc29" />
+
 
 > **"L'impression de rapidité compte plus que la rapidité réelle."**
 
