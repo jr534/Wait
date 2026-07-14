@@ -265,9 +265,9 @@ async def lifespan(app: FastAPI):
     model_perdict_froamt.eval()
 
     model = SentenceTransformer("BAAI/bge-m3")
-    path = "./mt5_fakcogni_model"
-    app.state.tokenizer = AutoTokenizer.from_pretrained(path)
-    app.state.model_sent = MT5ForConditionalGeneration.from_pretrained(path)
+     repo_id = "prozart/Wait"
+    app.state.tokenizer = AutoTokenizer.from_pretrained(repo_id)
+    app.state.model_sent = MT5ForConditionalGeneration.from_pretrained(repo_id)
     # On attache tout à app.state pour y accéder ailleurs
     app.state.db_conn = conn
     app.state.model = model
