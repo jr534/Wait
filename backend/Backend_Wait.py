@@ -156,7 +156,7 @@ async def search(query: str) -> str:
 async def get_city_weather(city_name: str) -> str:
     """Get the current weather for a given city. cette outie ne prend uniuqment le nom de la ville et non le pays le format demande est : \n Paris \n pas Paris France juste uniquemnt Paris"""
     print (f"Fetching weather for {city_name}...")
-    api_key = "0bc328c650091468c9a37a5b380ea3d4"  # Replace with
+    api_key = "<API_KEY>"  # Replace with
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={api_key}&units=metric&lang=fr"
     response = requests.get(url)
     return await format_weather(response.json())
