@@ -9,7 +9,10 @@ from operator import itemgetter
 from google import genai
 from tqdm import tqdm
 import time
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 results =[]
 model = SentenceTransformer("BAAI/bge-m3")
 conn = sqlite3.connect("icons_lucide.db", check_same_thread=False)
@@ -26,7 +29,10 @@ old_len_result = 0
 prompts = []
 total_num = 0
 nb_prompts = 3000
-client = genai.Client(api_key="AIzaSyDkmu0me7dkRh5SEPMGaFIwO6PPsFlWAoM")
+api_key = os.getenv("API_KEY_GEMINI")
+if not api_key:
+    raise RuntimeError("API_KEY_GEMINI manquante : crée un fichier .env (voir README)")
+client = genai.Client(api_key=api_key)
 pbar = tqdm(total=nb_prompts, desc="Génération", unit="liens")
 
 # {"message_id": "6ab24d72-0181-4594-a9cd-deaf170242fb", "parent_id": null, "user_id": "c3fe8c76-fc30-4fa7-b7f8-c492f5967d18", "created_date": "2023-02-05T14:23:50.983374+00:00", "text": "Can you write a short introduction about the relevance of the term \"monopsony\" in economics? Please use examples related to potential monopsonies in the labour market and cite relevant research.", "role": "prompter", "lang": "en", "review_count": 3, "review_result": true, "deleted": false, "rank": null, "synthetic": false, "model_name": null, "emojis": {"+1": 10, "_skip_reply": 1, "_skip_ranking": 4}, "labels": {"spam": {"value": 0.0, "count": 3}, "lang_mismatch": {"value": 0.0, "count": 3}, "pii": {"value": 0.0, "count": 3}, "not_appropriate": {"value": 0.0, "count": 3}, "hate_speech": {"value": 0.0, "count": 3}, "sexual_content": {"value": 0.0, "count": 3}, "quality": {"value": 0.9166666666666666, "count": 3}, "toxicity": {"value": 0.16666666666666666, "count": 3}, "humor": {"value": 0.3333333333333333, "count": 3}, "creativity": {"value": 0.6666666666666666, "count": 3}, "violence": {"value": 0.0, "count": 3}}, "events": null, "detoxify": {"toxicity": 0.00044308538781479, "severe_toxicity": 3.252684837207198e-05, "obscene": 0.00023475120542570949, "identity_attack": 0.0001416115992469713, "insult": 0.00039489680784754455, "threat": 4.075629112776369e-05, "sexual_explicit": 2.712695459194947e-05}, "message_tree_id": "6ab24d72-0181-4594-a9cd-deaf170242fb", "tree_state": "ready_for_export"}
